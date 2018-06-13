@@ -20,39 +20,69 @@ interface Show<T> {
 
 function repeat(n: number, s: string) : string {
     let res = "";
+	'a' === 'a';
     for (let i = 0; i < n; i++) {
         res += s;
     }
     return res;
 }
 
-type TreeType<T extends Show<T>> = NullTree | Tree<T>;
-
 function showHelper<T extends Show<T>>(t: TreeType<T>, x: number) : string {
-    if (typeof t === "NullTree") {
+    if (t.isNull()) {
         return t.show();
     }
     else {
-        return "\n" + repeat(x, "  ") + "(" + t.value.show()
-            + showHelper(t.leftnode, x + 1) + showHelper(t.rightnode, x + 1) + ")";
+        return "\n" + repeat(x, "  ") + "(" + t.val().show()
+            + showHelper(t.left(), x + 1) + showHelper(t.right(), x + 1) + ")";
     }
 }
 
-class NullTree implements Show<NullTree> {
-    constructor () {
+interface TreeType<T> {
+	isNull: () => boolean;
+	val: () => T?;
+	left: () => TreeType<T>?;
+	right: () => TreeType<T>?;
+}
+
+class NullTree<T> implements Show<NullTree>, TreeType<T> {
+	constructor () {
     }
+
+	isNull () {
+		return true;
+	}
+
+	val () {}
+	left () {}
+	right () {}
 
     show () {
         return " *"
     }
 }
 
-class Tree<T extends Show<T>> implements Show<Tree<T>> {
+class Tree<T extends Show<T>> implements Show<Tree<T>>, TreeType<T> {
     constructor ( public value: T
                 , public leftnode: TreeType<T>
                 , public rightnode: TreeType<T>
                 ) {
-    }
+	}
+
+	isNull () {
+		return false;
+	}
+
+	val () {
+		return this.value;
+	}
+
+	left () {
+		return this.leftnode;
+	}
+
+	right () {
+		return this.rightnode;
+	}
 
     show (): string {
         return showHelper(this, 0);
@@ -69,31 +99,40 @@ class MyNumber implements Ord<MyNumber>, Show<MyNumber> {
 
     greaterThan (r: MyNumber) {
         return this.value > r.value;
-    }
+	}
 
     show () {
         return this.value.toString();
     }
+
+	fromList (ns: number[]) {
+		if (ns.length === 0) {
+			return nullTree();
+		}
+		else {
+			return [new MyNumber(ns[0]), ...this.fromList(ns.slice(1))];
+		}
+	}
 }
 
 function insert<T extends Show<T> & Ord<T>>(t: TreeType<T>, value: T): TreeType<T> {
-    if (typeof t === "NullTree") {
+    if (t.isNull()) {
         return singleton(value);
     }
     else {
-        if (value.equalTo(t.value)) {
+        if (value.equalTo(t.val())) {
             return t;
         }
-        else if (value.greaterThan(t.value)) {
-            return insert(t.rightnode, value);
+        else if (value.greaterThan(t.val())) {
+            return insert(t.right(), value);
         }
         else {
-            return insert(t.leftnode, value);
+            return insert(t.left(), value);
         }
     }
 }
 
-function nullTree<T extends Show<T>>() : TreeType<T> {
+function nullTree<T extends Show<T>>(): TreeType<T> {
     return new NullTree();
 }
 
